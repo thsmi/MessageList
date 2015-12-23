@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+  <Description about="urn:mozilla:install-manifest">	
+    <em:id>messagelist@tschmid.net</em:id>	
+    <em:name>MessageList</em:name>	
+    <em:version>0.1</em:version>
+    <em:creator>Thomas Schmid</em:creator>
+    <em:description>...</em:description>
+    <em:homepageURL></em:homepageURL>
+    	
+	  <em:unpack>true</em:unpack>
+
+    <!-- thunderbird -->
+    <em:targetApplication>
+      <Description>
+        <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
+        <em:minVersion>37.*</em:minVersion>
+        <em:maxVersion>80.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+
+  </Description>
+</RDF>

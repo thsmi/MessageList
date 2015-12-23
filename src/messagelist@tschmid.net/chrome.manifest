@@ -1,0 +1,5 @@
+content threadtree                 content/
+locale  threadtree en-US           locale/en-US/
+skin    threadtree classic/1.0     skin/
+
+overlay	chrome://messenger/content/messenger.xul   chrome://threadtree/content/messengerOverlay.xul

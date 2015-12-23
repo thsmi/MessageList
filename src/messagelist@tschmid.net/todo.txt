@@ -1,0 +1,51 @@
+=TODOS===
+
+Rename to messagelist
+
+Selecting single messages and open message pane
+Selecting mulipe messages
+
+Keybindings, scroll, select, delete
+
+onkeydown= ThreadPaneKeyDown(event);
+onselect=ThreadPaneSelectionChange();
+
+Indicators for Flags, Junk, Properties and attachments, direction
+
+new message indicator
+
+mark as read/ mark as unread
+
+drag and drop
+
+Threads
+Groups
+
+change sort direction (colum header klick)
+
+Different templates for inbox, outbox etc...
+
+Fallback template to simulate old layout
+
+Replace existing code
+
+Remove TreeView from DBView
+
+Remove :CellTextForColumn from DBView
+
+Remove Fetch... methodfs from DBView
+
+
+= DONE ====
+
+context menu 
+
+touch events
+
+Set data only for visible elements. 
+It makes no sense to stream and parse the message when it is not displayed.
+
+----
+
+
+http://www.fossfactory.org/project/p294?tab=submissions#tabs

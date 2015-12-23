@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="chrome://secondopinion/skin/overlay.css" type="text/css"?>
+
+<!DOCTYPE overlay SYSTEM "chrome://secondopinion/locale/secondopinion.dtd">
+
+<overlay id="threadtreeMessengerOverlay" 
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  
+  <script type="application/x-javascript" src="chrome://threadtree/content/overlay.js"/>
+ 
+  <hbox id="threadContentArea">
+  	<hbox>
+  		<button oncommand="msgListInject()">Inject</button>
+  		<button oncommand="msgListPopulate()">Populate</button>
+  	</hbox>
+  	
+  	  <iframe
+  	    id="RichtListView" flex="1" 
+  	    src="chrome://threadtree/content/index.html"
+  	    context="mailContext" > </iframe>
+  </hbox> 
+  
+</overlay>
+
