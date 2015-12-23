@@ -110,6 +110,13 @@
    height:0; 
    overflow:hidden;
  }
+ 
+ .row[msg-attachment] .attachment {
+   height: 16px;
+   width: 19px;
+   background-image: url(chrome://messenger/skin/icons/quick-search-icons.png);
+   background-position: -80px 0px;
+ }
   
 </style>
 </head>
@@ -128,13 +135,13 @@
 
       <div class="line">
         <div class="subject">Subject Line</div>
-        <div class="date">DD/MM/YYYY</div>
+        <div class="attachment"></div>
+		<div class="date">DD/MM/YYYY</div>
         <div class="time">HH:MM:SS</div>
       </div>
 
       <div class="line">
         <div class="from">From</div>
-        <div class="attachment"></div>
         <div class="stared"></div>
         <div class="priority"></div>
         <div class="junk"></div>

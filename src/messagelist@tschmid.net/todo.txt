@@ -47,5 +47,5 @@ It makes no sense to stream and parse the message when it is not displayed.
 
 ----
 
-
+https://bugzilla.mozilla.org/show_bug.cgi?id=213945
 http://www.fossfactory.org/project/p294?tab=submissions#tabs

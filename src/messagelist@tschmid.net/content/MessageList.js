@@ -82,7 +82,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 		  return;
 		  
 		queue.push(idx);
-		pump();
+		window.setTimeout(function() {pump();}, 0);
 	}
 	
 	function pump() {
@@ -101,6 +101,18 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 		
     var hdr = dbView.getMsgHdrAt(idx);
     
+    // Loading the message text is slow. 
+    // Especially when scrolling it happens that the element
+    // Is destroyed before the message text can be loaded
+    
+    // So we skip right here if the element is gone
+    var elm = document.getElementById("msg"+hdr.messageKey);
+    if (!elm) {
+    	Components.utils.reportError("no element for "+hdr.messageKey);
+      window.setTimeout(function() {pump();}, 0);
+      pumps++;
+      return;
+    }
  
     var callback = function( hdr, message ) {
  
@@ -180,6 +192,9 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
         
     fill(template, "priority", hdr.priority);
     
+    if (hdr.flags & 0x10000000)
+      template.setAttribute("msg-attachment", "true");
+    
     
     //if (hdr.threadId)
     //  template.style.marginLeft = "20px";
@@ -241,6 +256,55 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	
 	function MessageList() {
 		this.range = null;
+		this.max = 14;
+		this.listeners = {};
+	}
+	
+	MessageList.prototype.init 
+		  = function () {
+		  
+		var self = this;
+		
+		this.listeners.onClick = function(e) {
+		  self.onClick(e);
+		};
+		
+    this._getContent().addEventListener('click', this.listeners.onClick, false);        
+	}
+	
+	MessageList.prototype.deinit
+		  = function () {
+		  	
+		if (this.listeners.onClick)
+		  this._getContent().removeEventListener('click', this.listeners.onClick);
+	}
+	
+	MessageList.prototype.onClick
+	    = function (event) {
+ 
+    var elm = event.target;
+    
+    while (elm !== null) {
+      if (elm.classList.contains("row"))
+        break;
+      
+      elm = elm.parentNode;
+    }
+    
+    if (!elm)
+      return;
+      
+    dbView.selectMsgByKey(elm.id.substr(3));  
+	}
+	
+	MessageList.prototype._getContent
+	    = function () {
+	  var elm = document.getElementById("content");
+	  
+	  if (!elm)
+	    throw new Error("Could not find any content element");
+	    
+	  return elm;
 	}
 	
 	// TODO end should be optional
@@ -251,7 +315,10 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
   MessageList.prototype._loadItems
       = function (start, end) {
       	      	
-    var content = document.getElementById("content");
+    if (end-start > this.max*2)
+      Components.utils.reportError("Too many elements " + (end-start) +" Elements of "+this.max);
+
+    var content = this._getContent();
     
     for (var idx=start; idx<end; idx++)
       createElement(idx, content);
@@ -264,6 +331,9 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	MessageList.prototype._unloadItems
 	    = function (start, end) {
     
+	  if (end-start > this.max)
+	    Components.utils.reportError("Too many elements " + (end-start) +" Elements of "+this.max);
+	    	
     for (var idx=start; idx<end; idx++) {
       
       var item = this.getItem(idx);  
@@ -338,7 +408,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
       idx = this.getFirstVisibleElement();
     // Adjust the buffers...
     
-    this.adjust(idx-15, idx+15);
+    this.adjust(idx-this.max, idx+this.max);
 
     // Then update the scroll height
     // FIXME: we should only reset the size when it changed.
@@ -350,6 +420,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     //Components.utils.reportError("Children"+this.count());
          	
   };
+ 
   
 	MessageList.prototype.adjust
 	    = function (start, end) {
@@ -357,8 +428,8 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	  var newRange = {};
     newRange.start  = Math.max( start, 0);
     newRange.end    = Math.min( end, dbView.rowCount);
-
-    if ((newRange.end - newRange.start) > 40)
+    
+    if ((newRange.end - newRange.start) > (this.max * 2))
       Components.utils.reportError(" Range to lage "+(newRange.end - newRange.start));
     
     // A short cut in case we are uninitialized
@@ -369,22 +440,52 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     }
     
     var oldRange = this.range;
+    
+    // Quit in case the range did not change at all
+    if ((oldRange.start === newRange.start) && (newRange.end === oldRange.end)) 
+      return;
+        
+    // cse they to not intersect we bail out...
+    if ((newRange.end < oldRange.start) || (newRange.start > oldRange.end)) {
+    	this._loadItems(newRange.start, newRange.end);
+    	this._unloadItems(oldRange.start, oldRange.end);
+    	this.range = newRange;
+    	return;
+    }
+    
+    // In case they Intersect we update new borders...
        
     // (====[####
-    if (oldRange.start > newRange.start)
+    if (oldRange.start > newRange.start) {
+      if ((oldRange.start - newRange.start) > (this.max * 2))
+    	  Components.utils.reportError(" A Range to lage "+(oldRange.start - newRange.start));
+      
       this._loadItems(newRange.start, oldRange.start);
+    }
       
     // ####]===)
-    if (oldRange.end < newRange.end)
+    if (oldRange.end < newRange.end) {
+      if ((newRange.end - oldRange.end) > (this.max * 2))
+        Components.utils.reportError(" B Range to lage "+(newRange.end - oldRange.end));
+      
       this._loadItems(oldRange.end, newRange.end);
+    }
     
     // [####(===
-    if (oldRange.start < newRange.start)
-      this._unloadItems(oldRange.start, newRange.start);     
+    if (oldRange.start < newRange.start) {
+      if ((newRange.start - oldRange.start) > (this.max * 2))
+    	  Components.utils.reportError(" C Range to lage "+(newRange.start - oldRange.start));
+      
+      this._unloadItems(oldRange.start, newRange.start);
+    }
       
     // ====]###)
-    if (oldRange.end > newRange.end)
+    if (oldRange.end > newRange.end) {
+      if ((oldRange.end - newRange.end) > (this.max * 2))
+    	  Components.utils.reportError(" D Range to lage "+(oldRange.end - newRange.end));
+      
       this._unloadItems(newRange.end, oldRange.end);
+    }
       
     this.range = newRange;
 	};
@@ -520,16 +621,19 @@ toggle select... event.charCode == ' '.charCodeAt(0)
   	var running = false;
     var func = function() {
     	
-    	//Components.utils.reportError("on Scroll");
+    	msgList.adjustView();
     	
-      if (running)
+    	// Using requestAnimationFrame causes whiteouts for some reason
+    	// But the cpu load is identical to te case when requestAnimationFrame is not used.
+    	
+/*    if (running)
         return;
       
       running = true;
       requestAnimationFrame( function() {
-        scroll.dispatchEvent(new CustomEvent("optimizedScroll"));
+      	msgList.adjustView();
         running = false;
-      });
+      });*/
     };
     
     scroll.addEventListener("scroll", func);
@@ -540,13 +644,8 @@ toggle select... event.charCode == ' '.charCodeAt(0)
   document.addEventListener("DOMContentLoaded", function(event) {
     Components.utils.reportError("Dom Fully loaded and parsed messaglist ");
 
+    msgList.init();
     throttle ();
-
-  
-    document.getElementById("scroll").addEventListener("optimizedScroll", function() {    
-   	  msgList.adjustView();
-    });
-
 
   });
   
