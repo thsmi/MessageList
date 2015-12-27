@@ -1,6 +1,6 @@
 /*
  * The contents of this file are licenced. You may obtain a copy of 
- * the license at https://github.com/thsmi/MessageListn/ or request it via 
+ * the license at https://github.com/thsmi/messagelist/ or request it via 
  * email from the author.
  *
  * Do not remove or change this comment.
@@ -19,6 +19,8 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 
 (function(exports) {
 	
+	
+	
 	/* global document */
 	/* global Components */
 	/* global Intl */
@@ -35,11 +37,126 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	
 
 	
-	
-	function getTemplate() {
-		var elm = document.getElementById("template");
-		return elm.children[0].cloneNode(true);
+	function HeaderTemplate(view, idx) {
+	  this._idx = idx;
+	  this._view = view;
 	}
+	
+	HeaderTemplate.prototype._getTemplate
+	    = function() {
+	    	
+    var elm = document.getElementById("template-header");
+    return elm.children[0].cloneNode(true); 	      
+	};
+	
+	HeaderTemplate.prototype.toElement
+	    = function() {
+
+    var template = this._getTemplate();
+
+	  var hdr = this._view.getMsgHdrAt(this._idx);
+
+	
+    // TODO load and unload need to be aware of dummies elements
+    // otherwise we'll leak
+
+    template.id = "msg"+this._idx;
+	  template.setAttribute("msg-type", "header");
+	  template.setAttribute("msg-key", hdr.messageKey);
+
+    fill(template, "from", "Dummy");
+    fill(template, "subject", "");
+    fill(template, "message", "");
+    fill(template, "time", "");
+    fill(template, "day", "");
+    
+    return template;
+	};
+	
+	function MessageTemplate(view, idx) {
+		this._idx = idx;
+		this._view = view;
+	}
+	
+	MessageTemplate.prototype._getTemplate
+	    = function() {
+    var elm = document.getElementById("template-message");
+    return elm.children[0].cloneNode(true);	    	
+	};
+	
+  MessageTemplate.prototype.toElement
+      = function() {
+
+    var hdr = this._view.getMsgHdrAt(this._idx);
+
+    var template = this._getTemplate();
+    
+    template.id = "msg"+this._idx;
+    template.setAttribute("msg-type", "message");
+    template.setAttribute("msg-key", hdr.messageKey);
+    
+    fill(template, "from", hdr.mime2DecodedAuthor);
+    fill(template, "subject", hdr.mime2DecodedSubject);
+    
+
+    fillMimeMessageAsync(this._idx);
+    
+    // hdr.folder.fetchMsgPreviewText([hdr.messageKey], 1, true, new UrlListener(hdr));
+    //fill(template, "message", hdr.getProperty("preview"));
+      
+    fill(template, "date", new Date(hdr.date/1000).toLocaleDateString());    
+    fill(template, "time", new Date(hdr.date/1000).toLocaleTimeString());
+    
+    if (hdr.isRead === false)
+      template.setAttribute("msg-unread", "true");
+    
+    if (hdr.isFlagged === true)
+      template.setAttribute("msg-stared", "true");
+           
+      
+    fill(template, "size", localizeSize(hdr.messageSize) );
+        
+    fill(template, "priority", hdr.priority);
+    
+    if (hdr.flags & 0x10000000)
+      template.setAttribute("msg-attachment", "true");
+    
+    if (this._view.getFlagsAt(this._idx) & 0x40000000)
+      template.setAttribute("msg-root", "true");
+      
+    if (this._view.getFlagsAt(this._idx) & 0x8000000)
+      template.setAttribute("msg-thread", "true");
+      
+    if (this._view.getFlagsAt(this.idx) & 0x00000020) {
+    	Components.utils.reportError("is elided");
+      template.setAttribute("msg-elided", "true");
+    }
+         
+    var score = hdr.getStringProperty("junkscore");
+    Components.utils.reportError("Score "+(1*score));
+    if ((1*score) === 100)
+      template.setAttribute("msg-junk", "true");
+    // MSG_VIEW_FLAG_ISTHREAD
+    // MSG_VIEW_FLAG_ELIDED
+    // MSG_VIEW_FLAG_HASCHILDRN
+    
+    
+    //if (hdr.threadId)
+    //  template.style.marginLeft = "20px";
+  //  Components.utils.reportError("Thread id"+hdr.threadId);
+    
+    
+    //Components.utils.reportError("Level "+dbView.getLevel(idx));
+    //if(hdr.threadParent !== 4294967295 )
+    template.children[0].style.paddingLeft = ""+10*((this._view.getLevel(this._idx))+1)+"px";
+    //template.children[0].style.marginLeft = ""+((15*dbView.getLevel(idx) > 0)?15:0)+"px";
+    // wenn == 4294967295 dann ist es ein root node
+    //Components.utils.reportError("Threadparent"+hdr.threadParent);   
+    
+    return template;
+  };
+
+	
 	
 	function getVisibleRowCount() {
     var content = document.getElementById("content");
@@ -98,17 +215,14 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     pumps--;
       		
 		var idx = queue.pop();
-		
-    var hdr = dbView.getMsgHdrAt(idx);
-    
+		    
     // Loading the message text is slow. 
     // Especially when scrolling it happens that the element
     // Is destroyed before the message text can be loaded
     
     // So we skip right here if the element is gone
-    var elm = document.getElementById("msg"+hdr.messageKey);
+    var elm = document.getElementById("msg"+idx);
     if (!elm) {
-    	Components.utils.reportError("no element for "+hdr.messageKey);
       window.setTimeout(function() {pump();}, 0);
       pumps++;
       return;
@@ -126,13 +240,19 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     	  
       var body = message.coerceBodyToPlaintext(hdr.folder);
       
-      var elm = document.getElementById("msg"+hdr.messageKey);
+      var elm = document.getElementById("msg"+idx);
+
+      if( !elm ) 
+        return;
       
-      if (elm)
-        fill(elm, "message", body);   
+      if ( elm.getAttribute("msg-key") !== ""+hdr.messageKey )
+        return;
+      
+      fill(elm, "message", body.substr(0,2048));   
     };
 		
     try {
+ 	    var hdr = dbView.getMsgHdrAt(idx);
       MsgHdrToMimeMessage(hdr, null, callback , false, {saneBodySize: true}) ;
     } catch (ex) {
       Components.utils.reportError(ex);
@@ -142,103 +262,23 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     }
 	}
 
-	
-	function createMessage(idx) {
+  var hdrtmpl = null;	
 
-		var hdr = dbView.getMsgHdrAt(idx);
-
-    var template = getTemplate();
-    template.id = "msg"+hdr.messageKey;
-    
-    fill(template, "from", hdr.mime2DecodedAuthor);
-    fill(template, "subject", hdr.mime2DecodedSubject);
-    
-    /*var callback = function(hdr, message) {
-      
-      if (message === null)  
-        return;
-        
-      var body = message.coerceBodyToPlaintext(hdr.folder);
-      
-      fill(template, "message", body);
-      //if (meta.author)
-      //  authorNode.textContent = meta.author;
-    };
-    
-    try {
-      MsgHdrToMimeMessage(hdr, null, callback , false, {saneBodySize: true});
-    } catch (ex) {
-      Components.utils.reportError(ex);
-      fill(template, "message", "...");
-    }*/
-    
-    fillMimeMessageAsync(idx);
-    
-    // hdr.folder.fetchMsgPreviewText([hdr.messageKey], 1, true, new UrlListener(hdr));
-    //fill(template, "message", hdr.getProperty("preview"));
-      
-    fill(template, "date", new Date(hdr.date/1000).toLocaleDateString());
-    
-    fill(template, "time", new Date(hdr.date/1000).toLocaleTimeString());
-    
-    if (hdr.isRead === false)
-      template.setAttribute("msg-unread", "true");
-    
-    if (hdr.isFlagged === true)
-      template.setAttribute("msg-stared", "true");
-           
-      
-    fill(template, "size", localizeSize(hdr.messageSize) );
-        
-    fill(template, "priority", hdr.priority);
-    
-    if (hdr.flags & 0x10000000)
-      template.setAttribute("msg-attachment", "true");
-    
-    
-    //if (hdr.threadId)
-    //  template.style.marginLeft = "20px";
-  //  Components.utils.reportError("Thread id"+hdr.threadId);
-    
-    
-    //Components.utils.reportError("Level "+dbView.getLevel(idx));
-    //if(hdr.threadParent !== 4294967295 )
-    template.children[0].style.paddingLeft = ""+10*((dbView.getLevel(idx))+1)+"px";
-    //template.children[0].style.marginLeft = ""+((15*dbView.getLevel(idx) > 0)?15:0)+"px";
-    // wenn == 4294967295 dann ist es ein root node
-    //Components.utils.reportError("Threadparent"+hdr.threadParent);   
-		
-    return template;
-	}
-	
-	function createCaption(idx) {
-
-    var hdr = dbView.getMsgHdrAt(idx);
-
-    var template = getTemplate();
-    // TODO load and unload need to be aware of dummies elements
-    // otherwise we'll leak
-    template.id = "msg"+hdr.messageKey+"dummy";
-    
-    fill(template, "from", "Dummy");
-    fill(template, "subject", "");
-    fill(template, "message", "");
-    fill(template, "time", "");
-    fill(template, "day", "");
-
-    return template;
-  }
-	
 	function createElement(idx, content) {
+		
+		if (hdrtmpl === null)
+		  hdrtmpl = new org.mozilla.thunderbird.msglist.header.LegacyHeader(dbView);
 		
 		var template = null;
 		
     var flags = dbView.getFlagsAt(idx);
 
+    // TODO do not create a new TemplateClass for each call...
+    // one generic which is initialized once should be enough
     if (flags & 0x20000000)
-      template = createCaption(idx);
+      template = hdrtmpl.toElement(idx);
     else
-      template = createMessage(idx);
+      template = (new MessageTemplate(dbView, idx)).toElement();
          
     content.appendChild(template);
        
@@ -247,12 +287,6 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     return template;
 	}
 		
-	
-	
-	// 1. Implement double buffering
-	// 2. Add/Remove Element onstead rebuilding the whole content
-	// [      [   ]     ]
-
 	
 	function MessageList() {
 		this.range = null;
@@ -270,32 +304,72 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 		};
 		
     this._getContent().addEventListener('click', this.listeners.onClick, false);        
-	}
+	};
 	
 	MessageList.prototype.deinit
 		  = function () {
 		  	
 		if (this.listeners.onClick)
 		  this._getContent().removeEventListener('click', this.listeners.onClick);
-	}
+	};
+	
+	MessageList.prototype.onSelect
+	    = function (idx) {
+	  dbView.selectMsgByKey(dbView.getKeyAt(idx));
+	};
+	
+	MessageList.prototype.onStar
+	    = function (idx,key) {
+	  
+	  var hdr = dbView.getMsgHdrAt(idx);
+
+    var elm = document.getElementById("msg"+idx);
+    
+    if (!elm)
+      return;
+	  
+	  var headers = Components.classes["@mozilla.org/array;1"]
+                      .createInstance(Components.interfaces.nsIMutableArray);
+    headers.appendElement(hdr, false);
+
+    hdr.folder.markMessagesFlagged( headers, !hdr.isFlagged );
+
+    if (hdr.isFlagged === true)
+      elm.setAttribute("msg-stared", "true");
+    else
+      elm.removeAttribute("msg-stared");
+  };
 	
 	MessageList.prototype.onClick
 	    = function (event) {
- 
-    var elm = event.target;
+     
+    var action = this.onSelect;
     
+    var idx = null;
+    var key = null;
+    
+    var elm = event.target;
     while (elm !== null) {
-      if (elm.classList.contains("row"))
-        break;
+    	
+    	if (elm.classList.contains("star")) {
+    		action = this.onStar;
+    	}
+    	
+      if (elm.classList.contains("row")) {
+      	
+      	idx = elm.id.substr(3);
+      	key = elm.getAttribute("msg-key");
+      	break;
+      }
       
       elm = elm.parentNode;
     }
     
-    if (!elm)
+    if (idx === 0 || key === null)
       return;
       
-    dbView.selectMsgByKey(elm.id.substr(3));  
-	}
+    action(idx, key);   
+	};
 	
 	MessageList.prototype._getContent
 	    = function () {
@@ -305,7 +379,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	    throw new Error("Could not find any content element");
 	    
 	  return elm;
-	}
+	};
 	
 	// TODO end should be optional
 	/**
@@ -365,13 +439,11 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	
 	MessageList.prototype.getItem
 	    = function (idx) {
-	    	
-	  var hdr = dbView.getMsgHdrAt(idx);
 	 
-	  var item = document.getElementById("msg"+hdr.messageKey);
+	  var item = document.getElementById("msg"+idx);
 	  
 	  if (!item)
-      Components.utils.reportError("No elm for "+hdr.messageKey);
+      Components.utils.reportError("No elm for "+idx);
       
     return item;
 	};
@@ -385,7 +457,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
   
   MessageList.prototype.getRowHeight
       = function() {
-    return document.getElementById("template").children[0].offsetHeight;     	
+    return document.getElementById("template-message").children[0].offsetHeight;     	
   };
   
   MessageList.prototype.getFirstVisibleElement
@@ -457,33 +529,21 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
        
     // (====[####
     if (oldRange.start > newRange.start) {
-      if ((oldRange.start - newRange.start) > (this.max * 2))
-    	  Components.utils.reportError(" A Range to lage "+(oldRange.start - newRange.start));
-      
       this._loadItems(newRange.start, oldRange.start);
     }
       
     // ####]===)
     if (oldRange.end < newRange.end) {
-      if ((newRange.end - oldRange.end) > (this.max * 2))
-        Components.utils.reportError(" B Range to lage "+(newRange.end - oldRange.end));
-      
       this._loadItems(oldRange.end, newRange.end);
     }
     
     // [####(===
     if (oldRange.start < newRange.start) {
-      if ((newRange.start - oldRange.start) > (this.max * 2))
-    	  Components.utils.reportError(" C Range to lage "+(newRange.start - oldRange.start));
-      
       this._unloadItems(oldRange.start, newRange.start);
     }
       
     // ====]###)
     if (oldRange.end > newRange.end) {
-      if ((oldRange.end - newRange.end) > (this.max * 2))
-    	  Components.utils.reportError(" D Range to lage "+(oldRange.end - newRange.end));
-      
       this._unloadItems(newRange.end, oldRange.end);
     }
       

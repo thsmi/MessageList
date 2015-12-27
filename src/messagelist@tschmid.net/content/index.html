@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Title of the document</title>
-<script src="MessageList.js"></script>
-<style>
+  <script src="MessageList.js"></script>
+  <script src="MessageListHeaders.js"></script>
+  <style>
 
   html, body {
    height:100%;
@@ -22,7 +23,9 @@
 
   
   .line {
-    display : flex;
+    display : inline-flex;
+	width:100%;
+	max-width:100%;
   }
     
   .from {
@@ -52,15 +55,18 @@
   }
   
   .message {
-    /*white-space: wrap;*/
+    white-space: wrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    
+    word-wrap : break-word;
+	word-break: break-all;
+	
     color : darkgray;
     height: 2.5em;
+	
     /*width : 100%;*/
  
-    flex : 1 100%
+    /*flex : 1 100%*/
   }
   
   .time {
@@ -99,67 +105,172 @@
   .row {
     position: absolute;
     width: 100%;
-    left:0px;  
-  }
+	max-width:100%;
+    left:0px;
+	/* do not add any border, margins, padding here, it will destroy the layout */
+	}
  
   .item {
-   padding:5px 7px;
-   border-bottom : 1px solid gray;
+   padding:5px 4px;
+   margin:2px;
+   margin-left:20px;
+   border-bottom: 1px solid lightgray;
+
  }
+ 
+ .row .item {
+   transition: margin-right 0.3s ease-in-out;
+  transition-delay: 0.75s;
+ }
+ 
+ .row:hover .item {
+   margin-right:40px;
+
+   }
+ 
+ .item9 {
+   position:relative;
+ }
+ 
+ .item0 {
+   position:absolute;float:left;
+   top:0px;
+   width:20px; 
+   color:green;
+      height:100%;
+ }
+
+
+ .item2 {
+   position:absolute;
+   top:0px;
+   right:0px;
+   width:0px;
+   overflow:hidden;   
+   color:green;
+   height:100%;
+	transition: width 0.3s ease-in-out;
+    transition-delay: 0.75s;
+	
+ }
+ 
+ .row:hover .item2 {
+   width:40px; 
+   border-left: 1px solid lightgray;
+}
   
- #template {
+ #templates {
    height:0; 
    overflow:hidden;
  }
  
+ .row:hover {
+   background-color: #E5F3FF;
+ }
+ 
+ .row[msg-unread] .item0 {
+   border-left: 3px solid #0067B0;
+/*   padding-left: 3px !important;*/
+ }
+
+ .row .expand {
+   visibility: hidden;
+ }
+ 
+ .row[msg-root] .expand {
+  visibility: inherit;
+ }
+
+ .row[msg-elided] .item {
+  color: blue;
+ }
+
+ .row .star {
+  background-image: url("chrome://messenger/skin/starContact.png");
+  background-position: 0px 0px;
+  width:16px;
+  height:16px;
+} 
+
+ .row[msg-stared] .star {
+  background-position: -32px 0px;
+} 
+
  .row[msg-attachment] .attachment {
    height: 16px;
    width: 19px;
    background-image: url(chrome://messenger/skin/icons/quick-search-icons.png);
    background-position: -80px 0px;
  }
+.row[msg-junk]  { 
+/*.row .item0 {*/
+  background-image: url("chrome://messenger/skin/icons/junk-col.svg");
+  background-repeat: no-repeat;
+  background-position: -20px 35px;
+  background-size: 50px 50px;
+}
  
- .row:hover {
-   background-color: #E5F3FF;
- }
-  
 </style>
 </head>
 
 <body>
+<!--  <div id="header"> [ALL] [UNREAD] ..... Arrange by Conversation [by Subject] [A to Z]</div>-->
 
   <div id="scroll">   
     <div id="content"></div>
   </div>
 
-
-  <div id="template">
+  <div id="templates"> 
  
-    <div class="row">
-      <div class="item">
+    <div id="template-message">
+ 
+      <div class="row">
+		 
+		 <div class="item9">
+        <div class="item">
+		
+        <div class="line">
+		<div class="star"></div>
+	        <div class="subject">Subject Line</div>
+          <div class="attachment"></div>
+  		  <div class="date">DD/MM/YYYY</div>
+          <div class="time">HH:MM:SS</div>
+        </div>
 
-      <div class="line">
-        <div class="subject">Subject Line</div>
-        <div class="attachment"></div>
-		<div class="date">DD/MM/YYYY</div>
-        <div class="time">HH:MM:SS</div>
-      </div>
-
-      <div class="line">
-        <div class="from">From</div>
-        <div class="stared"></div>
-        <div class="priority"></div>
-        <div class="junk"></div>
-        <div class="size"></div>
-      </div>
+        <div class="line">
+          <div class="from">From</div>
+          <div class="priority"></div>
+          <div class="junk"></div>
+          <div class="size"></div>
+        </div>
      
-      <div class="line">
-        <div class="message">...</div>
-      </div>
-      
+        <div class="line">
+          <div class="message">...</div>
+        </div>
       </div> 
-    </div>
-  </div>  
+	  	    <div class="item0"> 
+		        <div class="expand">Ex</div>
+		 </div>
+
+	  	    <div class="item2"> 
+		        <div>Junk</div>
+				<div>Delete</div>
+		 </div>
+		 
+		 </div>
+	  
+	  </div>
+	  
+
+    </div>  
+  
+     <div id="template-header">
+	  <div class="row">
+	    <div class="caption"> Group Header</div>
+	  </div>
+	</div>
+	
+  </div>
 
  
 
