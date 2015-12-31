@@ -19,7 +19,8 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 
 (function(exports) {
 	
-	
+	var Cc = Components.classes;
+	var Cu = Components.utils;
 	
 	/* global document */
 	/* global Components */
@@ -32,7 +33,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 
 	UrlListener.prototype.OnStopRunningUrl = function (aUrl, aExitCode) {
 	
-      Components.utils.reportError("Callback"+this.header.getProperty("preview"));
+      Cu.reportError("Callback"+this.header.getProperty("preview"));
 	};
 	
 
@@ -133,7 +134,6 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     }
          
     var score = hdr.getStringProperty("junkscore");
-    Components.utils.reportError("Score "+(1*score));
     if ((1*score) === 100)
       template.setAttribute("msg-junk", "true");
     // MSG_VIEW_FLAG_ISTHREAD
@@ -143,7 +143,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
     
     //if (hdr.threadId)
     //  template.style.marginLeft = "20px";
-  //  Components.utils.reportError("Thread id"+hdr.threadId);
+    //  Components.utils.reportError("Thread id"+hdr.threadId);
     
     
     //Components.utils.reportError("Level "+dbView.getLevel(idx));
@@ -303,7 +303,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 		  self.onClick(e);
 		};
 		
-    this._getContent().addEventListener('click', this.listeners.onClick, false);        
+    this._getContent().addEventListener('click', this.listeners.onClick, false);            
 	};
 	
 	MessageList.prototype.deinit
@@ -311,6 +311,7 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 		  	
 		if (this.listeners.onClick)
 		  this._getContent().removeEventListener('click', this.listeners.onClick);
+		  
 	};
 	
 	MessageList.prototype.onSelect
@@ -343,6 +344,11 @@ Components.utils.import("resource:///modules/gloda/mimemsg.js");
 	MessageList.prototype.onClick
 	    = function (event) {
      
+    if (event.button !== 0) {
+      event.stopPropagation();
+      return;
+   }	    	
+	    	
     var action = this.onSelect;
     
     var idx = null;

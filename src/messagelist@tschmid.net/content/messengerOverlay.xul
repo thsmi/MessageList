@@ -18,7 +18,8 @@
   	  <iframe
   	    id="RichtListView" flex="1" 
   	    src="chrome://threadtree/content/index.html"
-  	    context="mailContext" > </iframe>
+  	    context="mailContext"
+  	    draggable="true"  > </iframe>
   </hbox> 
   
 </overlay>

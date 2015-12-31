@@ -1,22 +1,19 @@
 =TODOS===
 
-Rename to messagelist
-
 Selecting single messages and open message pane
 Selecting mulipe messages
 
 Keybindings, scroll, select, delete
 
+doubleclick
 onkeydown= ThreadPaneKeyDown(event);
 onselect=ThreadPaneSelectionChange();
 
 Indicators for Flags, Junk, Properties and attachments, direction
 
-new message indicator
-
 mark as read/ mark as unread
 
-drag and drop
+variable element height
 
 Threads
 Groups
@@ -37,6 +34,14 @@ Remove Fetch... methodfs from DBView
 
 
 = DONE ====
+
+new message indicator
+
+Rename to messagelist
+
+ThreadPaneDoubleClick(
+
+drag and drop
 
 context menu 
 
