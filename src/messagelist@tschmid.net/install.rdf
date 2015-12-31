@@ -3,7 +3,7 @@
   <Description about="urn:mozilla:install-manifest">	
     <em:id>messagelist@tschmid.net</em:id>	
     <em:name>MessageList</em:name>	
-    <em:version>0.1</em:version>
+    <em:version>0.2</em:version>
     <em:creator>Thomas Schmid</em:creator>
     <em:description>...</em:description>
     <em:homepageURL></em:homepageURL>
